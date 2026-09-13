@@ -19,10 +19,17 @@ interface Order {
   created_at: string
 }
 
-export default function ActiveOrders({ password }: { password: string }) {
+export default function ActiveOrders({
+  password,
+  onUnauthorized,
+}: {
+  password: string
+  onUnauthorized: () => void
+}) {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     fetchOrders()
@@ -30,13 +37,21 @@ export default function ActiveOrders({ password }: { password: string }) {
 
   async function fetchOrders() {
     try {
-      const res = await fetch(`${API_URL}/api/orders/`)
+      const res = await fetch(`${API_URL}/api/orders/`, {
+        headers: { 'X-Manager-Password': password },
+      })
+      if (res.status === 401) {
+        onUnauthorized()
+        return
+      }
       if (res.ok) {
         const data = await res.json()
         setOrders(data)
+      } else {
+        setError('Failed to load orders.')
       }
     } catch {
-      // ignore
+      setError('Failed to load orders.')
     } finally {
       setLoading(false)
     }
@@ -44,19 +59,31 @@ export default function ActiveOrders({ password }: { password: string }) {
 
   async function markCompleted(orderId: string) {
     setUpdating(orderId)
+    setError('')
     try {
       const res = await fetch(`${API_URL}/api/orders/${orderId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Manager-Password': password,
+        },
         body: JSON.stringify({ status: 'completed' }),
       })
+      if (res.status === 401) {
+        onUnauthorized()
+        return
+      }
       if (res.ok) {
         setOrders((prev) =>
-          prev.map((o) => (o.id === orderId ? { ...o, status: 'completed' } : o)),
+          prev.map((o) =>
+            o.id === orderId ? { ...o, status: 'completed' } : o,
+          ),
         )
+      } else {
+        setError('Failed to update order.')
       }
     } catch {
-      // ignore
+      setError('Failed to update order.')
     } finally {
       setUpdating(null)
     }
@@ -66,12 +93,17 @@ export default function ActiveOrders({ password }: { password: string }) {
     return <span className="opacity-60">Loading orders...</span>
   }
 
+  if (error && orders.length === 0) {
+    return <span className="text-sm text-red-400">{error}</span>
+  }
+
   if (orders.length === 0) {
     return <span className="opacity-60">No orders found.</span>
   }
 
   return (
     <div className="flex flex-col gap-4">
+      {error && <span className="text-sm text-red-400">{error}</span>}
       {orders.map((order) => (
         <div
           key={order.id}
@@ -80,11 +112,10 @@ export default function ActiveOrders({ password }: { password: string }) {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex flex-col gap-1">
               <span className="text-sm font-medium">
-                {order.cart_item.item} — {order.cart_item.size} x{order.cart_item.quantity}
+                {order.cart_item.item} — {order.cart_item.size} x
+                {order.cart_item.quantity}
               </span>
-              <span className="text-xs opacity-60">
-                ${order.total}.00
-              </span>
+              <span className="text-xs opacity-60">${order.total}.00</span>
             </div>
             <span
               className={`text-xs px-2 py-0.5 rounded-2xl border w-fit ${
@@ -107,8 +138,7 @@ export default function ActiveOrders({ password }: { password: string }) {
               {order.phone}
             </div>
             <div>
-              <span className="opacity-60">Venmo: </span>
-              @{order.venmo_username}
+              <span className="opacity-60">Venmo: </span>@{order.venmo_username}
             </div>
             <div>
               <span className="opacity-60">Affiliation: </span>

@@ -38,6 +38,12 @@ function ManagerPage() {
     }
   }
 
+  function handleUnauthorized() {
+    setAuthed(false)
+    setPassword('')
+    setError('Session rejected, please log in again')
+  }
+
   if (!authed) {
     return (
       <div className="mt-2 mx-2 sm:mx-4 flex flex-col justify-center items-center">
@@ -81,7 +87,10 @@ function ManagerPage() {
           <span className="text-lg">Order Manager</span>
         </div>
         <div className="mx-4 sm:mx-8 mt-6">
-          <ActiveOrders password={password} />
+          <ActiveOrders
+            password={password}
+            onUnauthorized={handleUnauthorized}
+          />
         </div>
       </div>
     </div>

@@ -1,8 +1,9 @@
 from datetime import datetime, timezone
 
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from auth import require_manager
 from db import get_orders_collection, get_stock_collection
 from models import OrderCreate, OrderResponse, OrderUpdate
 from services.email import send_confirmation_email
@@ -55,7 +56,11 @@ async def create_order(order: OrderCreate):
     return order_doc_to_response(order_dict)
 
 
-@router.get("/", response_model=list[OrderResponse])
+@router.get(
+    "/",
+    response_model=list[OrderResponse],
+    dependencies=[Depends(require_manager)],
+)
 async def list_orders():
     collection = get_orders_collection()
     orders = []
@@ -64,7 +69,11 @@ async def list_orders():
     return orders
 
 
-@router.get("/{order_id}", response_model=OrderResponse)
+@router.get(
+    "/{order_id}",
+    response_model=OrderResponse,
+    dependencies=[Depends(require_manager)],
+)
 async def get_order(order_id: str):
     if not ObjectId.is_valid(order_id):
         raise HTTPException(status_code=400, detail="Invalid order ID")
@@ -77,7 +86,11 @@ async def get_order(order_id: str):
     return order_doc_to_response(doc)
 
 
-@router.patch("/{order_id}", response_model=OrderResponse)
+@router.patch(
+    "/{order_id}",
+    response_model=OrderResponse,
+    dependencies=[Depends(require_manager)],
+)
 async def update_order(order_id: str, update: OrderUpdate):
     if not ObjectId.is_valid(order_id):
         raise HTTPException(status_code=400, detail="Invalid order ID")
@@ -98,7 +111,11 @@ async def update_order(order_id: str, update: OrderUpdate):
     return order_doc_to_response(result)
 
 
-@router.delete("/{order_id}", status_code=204)
+@router.delete(
+    "/{order_id}",
+    status_code=204,
+    dependencies=[Depends(require_manager)],
+)
 async def delete_order(order_id: str):
     if not ObjectId.is_valid(order_id):
         raise HTTPException(status_code=400, detail="Invalid order ID")
