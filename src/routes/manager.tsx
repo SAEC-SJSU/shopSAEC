@@ -10,7 +10,8 @@ export const Route = createFileRoute('/manager')({
 
 function ManagerPage() {
   const [password, setPassword] = useState('')
-  const [authed, setAuthed] = useState(false)
+  // Held in memory only: never persisted, so it dies with the tab.
+  const [token, setToken] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -26,11 +27,23 @@ function ManagerPage() {
         body: JSON.stringify({ password }),
       })
 
+      if (res.status === 429) {
+        setError('Too many attempts, please wait a few minutes')
+        return
+      }
+
       if (!res.ok) {
         throw new Error('Invalid password')
       }
 
-      setAuthed(true)
+      const data = await res.json()
+      if (!data.token) {
+        throw new Error('No token returned')
+      }
+
+      setToken(data.token)
+      // The password has done its job; drop it rather than keep it around.
+      setPassword('')
     } catch {
       setError('Invalid password')
     } finally {
@@ -38,13 +51,13 @@ function ManagerPage() {
     }
   }
 
-  function handleUnauthorized() {
-    setAuthed(false)
+  function handleSessionExpired() {
+    setToken('')
     setPassword('')
-    setError('Session rejected, please log in again')
+    setError('Session expired, please log in again')
   }
 
-  if (!authed) {
+  if (!token) {
     return (
       <div className="mt-2 mx-2 sm:mx-4 flex flex-col justify-center items-center">
         <div className="w-full max-w-md pb-8 rounded-md border-2 border-blue-100/30 bg-blue-950-950/20 p-8">
@@ -87,10 +100,7 @@ function ManagerPage() {
           <span className="text-lg">Order Manager</span>
         </div>
         <div className="mx-4 sm:mx-8 mt-6">
-          <ActiveOrders
-            password={password}
-            onUnauthorized={handleUnauthorized}
-          />
+          <ActiveOrders token={token} onSessionExpired={handleSessionExpired} />
         </div>
       </div>
     </div>

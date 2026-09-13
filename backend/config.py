@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     RESEND_FROM_EMAIL: str = "SAEC Shop <orders@we-saec.me>"
     FRONTEND_URL: str = "http://localhost:3000"
     MANAGER_PASSWORD: str = ""
+    # Optional: dedicated signing secret for manager sessions. When blank the
+    # key is derived from MANAGER_PASSWORD instead.
+    MANAGER_SECRET: str = ""
+    MANAGER_SESSION_HOURS: int = 8
 
     model_config = {
         "env_file": _env_file,

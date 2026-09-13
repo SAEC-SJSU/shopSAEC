@@ -20,11 +20,11 @@ interface Order {
 }
 
 export default function ActiveOrders({
-  password,
-  onUnauthorized,
+  token,
+  onSessionExpired,
 }: {
-  password: string
-  onUnauthorized: () => void
+  token: string
+  onSessionExpired: () => void
 }) {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -38,10 +38,10 @@ export default function ActiveOrders({
   async function fetchOrders() {
     try {
       const res = await fetch(`${API_URL}/api/orders/`, {
-        headers: { 'X-Manager-Password': password },
+        headers: { Authorization: `Bearer ${token}` },
       })
       if (res.status === 401) {
-        onUnauthorized()
+        onSessionExpired()
         return
       }
       if (res.ok) {
@@ -65,12 +65,12 @@ export default function ActiveOrders({
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'X-Manager-Password': password,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ status: 'completed' }),
       })
       if (res.status === 401) {
-        onUnauthorized()
+        onSessionExpired()
         return
       }
       if (res.ok) {
