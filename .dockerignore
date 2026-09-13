@@ -1,0 +1,12 @@
+node_modules
+.git
+.claude
+.output
+.nitro
+.tanstack
+.vinxi
+backend
+config/mongodb/data
+*.local
+.env*
+**/.DS_Store

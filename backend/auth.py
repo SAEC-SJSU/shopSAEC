@@ -16,6 +16,13 @@ _LOGIN_FAILURES: dict[str, list[float]] = {}
 MAX_LOGIN_FAILURES = 10
 LOGIN_WINDOW_SECONDS = 300
 
+# Backstop for when per-IP buckets are evaded entirely -- forged forwarded
+# headers, a botnet, or IPv6 rotation all give an attacker unlimited fresh keys.
+# Deliberately generous so a manager mistyping their password can never trip it;
+# it exists to cap total throughput, not to police individuals.
+_GLOBAL_FAILURES: list[float] = []
+MAX_GLOBAL_LOGIN_FAILURES = 100
+
 
 def _signing_key() -> bytes | None:
     """Key used to sign manager session tokens.
@@ -110,7 +117,14 @@ async def require_manager(authorization: str | None = Header(default=None)):
 
 
 def login_rate_limited(client: str) -> bool:
+    """True when either the per-client or the global failure budget is spent."""
     cutoff = time.time() - LOGIN_WINDOW_SECONDS
+
+    global _GLOBAL_FAILURES
+    _GLOBAL_FAILURES = [t for t in _GLOBAL_FAILURES if t > cutoff]
+    if len(_GLOBAL_FAILURES) >= MAX_GLOBAL_LOGIN_FAILURES:
+        return True
+
     recent = [t for t in _LOGIN_FAILURES.get(client, []) if t > cutoff]
     if recent:
         _LOGIN_FAILURES[client] = recent
@@ -121,7 +135,10 @@ def login_rate_limited(client: str) -> bool:
 
 def record_login_failure(client: str) -> None:
     _LOGIN_FAILURES.setdefault(client, []).append(time.time())
+    _GLOBAL_FAILURES.append(time.time())
 
 
 def clear_login_failures(client: str) -> None:
+    """Called after a correct password, which also releases the global budget."""
     _LOGIN_FAILURES.pop(client, None)
+    _GLOBAL_FAILURES.clear()

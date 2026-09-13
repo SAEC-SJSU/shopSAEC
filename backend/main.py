@@ -19,7 +19,17 @@ async def lifespan(app: FastAPI):
     await close_db()
 
 
-app = FastAPI(title="SAEC Shop API", lifespan=lifespan)
+_is_prod = settings.ENV != "dev"
+
+# Swagger/ReDoc/openapi.json hand an attacker the full API map, and the backend
+# port is reachable directly if the origin firewall ever lapses. Dev only.
+app = FastAPI(
+    title="SAEC Shop API",
+    lifespan=lifespan,
+    docs_url=None if _is_prod else "/docs",
+    redoc_url=None if _is_prod else "/redoc",
+    openapi_url=None if _is_prod else "/openapi.json",
+)
 
 app.add_middleware(
     CORSMiddleware,

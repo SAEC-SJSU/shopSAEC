@@ -8,6 +8,7 @@ _env_file = str(_root / ".env.dev") if os.getenv("ENV", "dev") == "dev" else str
 
 
 class Settings(BaseSettings):
+    ENV: str = "dev"
     MONGO_URI: str = "mongodb://localhost:27017"
     MONGO_DB_NAME: str = "shop_saec"
     RESEND_API_KEY: str = ""
