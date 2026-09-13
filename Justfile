@@ -18,7 +18,7 @@ frontend-build VITE_API_URL="":
 
 # Run the frontend container
 frontend-run PORT="3000": _ensure-network
-    docker run -d --name saec-frontend --network {{NETWORK}} -p {{PORT}}:3000 saec-frontend
+    docker run -d --name saec-frontend --network {{NETWORK}} -p 127.0.0.1:{{PORT}}:3000 saec-frontend
 
 # Rebuild and restart the frontend
 frontend-rebuild VITE_API_URL="" PORT="3000":
@@ -35,7 +35,7 @@ backend-build:
 
 # Run the backend container
 backend-run PORT="7676" ENV_FILE=".env.local": _ensure-network
-    docker run -d --name saec-backend --network {{NETWORK}} -p {{PORT}}:7676 --env-file {{ENV_FILE}} saec-backend
+    docker run -d --name saec-backend --network {{NETWORK}} -p 127.0.0.1:{{PORT}}:7676 -e ENV=prod --env-file {{ENV_FILE}} saec-backend
 
 # Rebuild and restart the backend
 backend-rebuild PORT="7676" ENV_FILE=".env.local":
