@@ -10,7 +10,7 @@ dependencies = [
     "pydantic>=2.12.5",
     "pydantic-settings>=2.14.2",
     "pymongo>=4.16.0",
-    "python-dotenv>=1.2.1",
+    "python-dotenv>=1.2.2",
     "resend>=2.23.0",
     "uvicorn>=0.41.0",
 ]
